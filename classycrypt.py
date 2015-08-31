@@ -1,7 +1,34 @@
 #!/usr/bin/python
 
+''' 
+Jcrypt Version 2.0
+
+Jcrypt2 is a learning project and not intended for the secure encryption of sensitive data.
+
+Jcrypt2 is started from the commandline. ( >> python jcrypt2.py)
+first line is path to the input file. ( >> /home/user/infilename)
+second line is path to the output file. ( >> /home/user/outfilename)
+third line is the secret user password ( >> ***pwd***)
+and that's it.
+
+Jcrypt2 will only work on files, to encrypt a folder, then you have to use a program like zip first.
+
+It's a symmetric cypher and supposed to be CPA secure.
+The encryption will create a 1024 byte random initialisation vector.
+Then pad the first block with random data to increase the filesize to a multiple of 1024 bytes (the first two byte of the padding will declare the length of the padding).
+Every block, is xored with the current key, then the positions of the bytes will be scrambled to create the key for the next block,
+then xored and scrambled once more before the data is written to the output file.
+To get the key for the (padded) first block, the initialisation vector is xored and scrambled thrice with the cycled user password.
+'''
+
+
+
+
 import os
 from getpass import getpass
+
+''' This class has the algorithms for the actual encryption and decryption process.
+A new instance, with the current key has to be created for every block.'''
 
 class Crypto(object):
 	
@@ -9,42 +36,49 @@ class Crypto(object):
 		
 		self.key = key
 
+''' (Encryption) Returns a scrambled string of the input block'''
+
 	def scramble(self, block):
-		
-		scrambled = str(block)
 		
 		for k in self.key[:100]:
 			dist = ord(k)+1
-			scrambled = scrambled[-dist*3:-dist*2]+scrambled[-dist:]+scrambled[:-dist*3]+scrambled[-dist*2:-dist]
+			block = block[-dist*3:-dist*2]+block[-dist:]+block[:-dist*3]+block[-dist*2:-dist]
 		
-		return scrambled
+		return block
+
+''' (Decryption) Returns the unscrambled input block'''
 
 	def unscramble(self, block):
 		
-		unscrambled = str(block)
-		
 		for k in reversed(self.key[:100]):
 			dist = ord(k)+1
-			unscrambled = unscrambled[dist*2:-dist]+unscrambled[:dist]+unscrambled[-dist:]+unscrambled[dist:dist*2]
+			block = block[dist*2:-dist]+block[:dist]+block[-dist:]+block[dist:dist*2]
 		
-		return unscrambled
+		return block
+
+''' This function returns xor of the current key and the input block'''
 
 	def xoring(self, block):
 		
 		return ''.join((chr(ord(k)^ord(old)) for k, old in zip(self.key, block)))
 
+''' (Encryption) Returns one encryption cycle of xoring and scrambling'''
+
 	def encycle(self, block):
 		
 		return self.scramble(self.xoring(block))
+
+''' (Decryption) Returns one decryption cycle of unscrambling and xoring'''
 
 	def decycle(self, block):
 
 		return self.xoring(self.unscramble(block))
 
-
+''' Stuff() contains most functions that are not directly part of the encryption algorythm.
+When it is initialized, it asks the user for the inputfile, outputfile and password and determines if the file is intended for encryption or decryption'''
 
 class Stuff(object):
-	
+
 	def __init__(self):
 		
 		self.infile = open(raw_input('Which file do you want to encrypt/decrypt? >> '), 'r')
@@ -68,6 +102,8 @@ class Stuff(object):
 		self.getpwd = getpass(prompt='Please enter your password >> ')
 		self.pswd = (self.getpwd*(1+1024/len(self.getpwd)))[:1024]
 
+''' (Encryption) This function determines the length of the padding, writes the first encrypted block to the outfile and returns the key for the next block.'''
+
 	def padfirstblock(self):
 	
 		currentkey = self.inivector()
@@ -79,7 +115,8 @@ class Stuff(object):
 		self.outfile.write(Crypt.encycle(currentkey))
 		
 		return currentkey
-		
+
+''' (Decryption) Writes the first block without padding to the outfile and returns the key for the next block.'''
 	
 	def depadfirstblock(self):
 		
@@ -93,6 +130,8 @@ class Stuff(object):
 		self.outfile.write(block[2+ord(block[0])*256+ord(block[1]):])
 		
 		return currentkey
+
+''' Creates and writes, or reads the initialization vector to/from the infile/outfile and returns the first key.'''
 	
 	def inivector(self):
 		
@@ -102,13 +141,14 @@ class Stuff(object):
 			
 			iv = os.urandom(1024)
 			self.outfile.write(iv)
-
-			return Crypt.encycle(Crypt.encycle(iv))
 		
 		else:
 		
-			return Crypt.encycle(Crypt.encycle(self.infile.read(1024)))
+			iv = self.infile.read(1024)
+		
+		return Crypt.encycle(Crypt.encycle(Crypt.encycle(iv)))
 
+''' The main function.'''
 
 def main():
 	

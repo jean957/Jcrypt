@@ -25,15 +25,8 @@ def outname(infile, crypt):		# determine the name for the outputfile
 	if crypt == 'encrypt':
 		return '%s.jcrypt' % infile		# for encryption, just append '.jcrypt' to the filename
 	else:
-		infilelist = []
-		for i in infile:
-			infilelist.append(i)				# make a list of letters of the name of the infile
-		myextension = []
-		for i in '.jcrypt':
-			myextension.append(i)
-		for i in range(7):
-			if myextension.pop(-1) != infilelist.pop(-1):			# if it's encrypted but not 'something.jcrypt' return 'decrypted*filename'
-				return 'decrypted%s' % infile
+		if infile[-7:] != '.jcrypt':			# if it's encrypted but not 'something.jcrypt' return 'decrypted*filename'
+			return 'decrypted%s' % infile
 		outfile = ''.join(infilelist)
 		try:
 			outf = open(outfile, 'r')					# if a file with the standardname for the outfile exists
