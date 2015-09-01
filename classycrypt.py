@@ -21,24 +21,32 @@ then xored and scrambled once more before the data is written to the output file
 To get the key for the (padded) first block, the initialisation vector is xored and scrambled thrice with the cycled user password.
 '''
 
+# Improvements:
+# Start with a one line summary, seperated by one line for multiline docstrings
+# Get better names for Stuff() and Crypto()
+# Max 100 letters/line
+# Switch 'encrypt', 'decrypt' to 0, 1
+# Get a 'safe' encryption where everything happens twice with an offset of 512 byte
 
 
 
 import os
 from getpass import getpass
 
-''' This class has the algorithms for the actual encryption and decryption process.
-A new instance, with the current key has to be created for every block.'''
 
 class Crypto(object):
+	
+	''' This class has the algorithms for the actual encryption and decryption process.
+	A new instance, with the current key has to be created for every block.'''
 	
 	def __init__(self, key):
 		
 		self.key = key
 
-''' (Encryption) Returns a scrambled string of the input block'''
-
 	def scramble(self, block):
+		
+		''' (Encryption) Returns a scrambled string of the input block'''
+
 		
 		for k in self.key[:100]:
 			dist = ord(k)+1
@@ -46,9 +54,9 @@ class Crypto(object):
 		
 		return block
 
-''' (Decryption) Returns the unscrambled input block'''
-
 	def unscramble(self, block):
+		
+		''' (Decryption) Returns the unscrambled input block'''
 		
 		for k in reversed(self.key[:100]):
 			dist = ord(k)+1
@@ -56,28 +64,29 @@ class Crypto(object):
 		
 		return block
 
-''' This function returns xor of the current key and the input block'''
-
 	def xoring(self, block):
+		
+		''' This function returns xor of the current key and the input block'''
 		
 		return ''.join((chr(ord(k)^ord(old)) for k, old in zip(self.key, block)))
 
-''' (Encryption) Returns one encryption cycle of xoring and scrambling'''
-
 	def encycle(self, block):
 		
-		return self.scramble(self.xoring(block))
+		''' (Encryption) Returns one encryption cycle of xoring and scrambling'''
 
-''' (Decryption) Returns one decryption cycle of unscrambling and xoring'''
+		return self.scramble(self.xoring(block))
 
 	def decycle(self, block):
 
+		''' (Decryption) Returns one decryption cycle of unscrambling and xoring'''
+
 		return self.xoring(self.unscramble(block))
 
-''' Stuff() contains most functions that are not directly part of the encryption algorythm.
-When it is initialized, it asks the user for the inputfile, outputfile and password and determines if the file is intended for encryption or decryption'''
-
 class Stuff(object):
+
+	''' Stuff() contains most functions that are not directly part of the encryption algorithm.
+	When it is initialized, it asks the user for the inputfile, outputfile and password and determines if the file is intended for encryption or decryption'''
+
 
 	def __init__(self):
 		
@@ -102,10 +111,10 @@ class Stuff(object):
 		self.getpwd = getpass(prompt='Please enter your password >> ')
 		self.pswd = (self.getpwd*(1+1024/len(self.getpwd)))[:1024]
 
-''' (Encryption) This function determines the length of the padding, writes the first encrypted block to the outfile and returns the key for the next block.'''
-
 	def padfirstblock(self):
 	
+		''' (Encryption) This function determines the length of the padding, writes the first encrypted block to the outfile and returns the key for the next block.'''
+
 		currentkey = self.inivector()
 		Crypt = Crypto(currentkey)
 	
@@ -115,11 +124,11 @@ class Stuff(object):
 		self.outfile.write(Crypt.encycle(currentkey))
 		
 		return currentkey
-
-''' (Decryption) Writes the first block without padding to the outfile and returns the key for the next block.'''
 	
 	def depadfirstblock(self):
 		
+		''' (Decryption) Writes the first block without padding to the outfile and returns the key for the next block.'''
+
 		currentkey = self.inivector()
 		Crypt = Crypto(currentkey)
 		
@@ -130,11 +139,11 @@ class Stuff(object):
 		self.outfile.write(block[2+ord(block[0])*256+ord(block[1]):])
 		
 		return currentkey
-
-''' Creates and writes, or reads the initialization vector to/from the infile/outfile and returns the first key.'''
 	
 	def inivector(self):
 		
+		''' Creates and writes, or reads the initialization vector to/from the infile/outfile and returns the first key.'''
+
 		Crypt = Crypto(self.pswd)
 		
 		if self.crypt == 'encrypt':
@@ -148,10 +157,10 @@ class Stuff(object):
 		
 		return Crypt.encycle(Crypt.encycle(Crypt.encycle(iv)))
 
-''' The main function.'''
-
 def main():
 	
+	''' The main function.'''
+
 	Start = Stuff()
 	
 	if Start.crypt == 'encrypt':
