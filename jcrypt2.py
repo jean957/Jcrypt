@@ -192,4 +192,4 @@ def main():
 			Start.outfile.write(Crypt.decycle(currentkey))
 
 
-# main()
+main()
